@@ -58,7 +58,15 @@ do_exit() {
 
 do_render() {
   # Clean screen first
-  echo -ne "\e[2J"
+  for ((idx = 0; idx < num_rains * NUM_RAIN_METADATA; idx += NUM_RAIN_METADATA)); do
+    X=${rains[idx]}
+    Y=${rains[idx + 1]}
+    LENGTH=${rains[idx + 4]}
+    for ((y = Y; y < Y + LENGTH; y++)); do
+      (( y < 1 || y > TERM_HEIGHT )) && continue
+      echo -ne "\e[${y};${X}H "
+    done
+  done
 
   for ((idx = 0; idx < num_rains * NUM_RAIN_METADATA; idx += NUM_RAIN_METADATA)); do
     if ((100 * RANDOM / 32768 < FALLING_ODD)); then
@@ -89,6 +97,7 @@ trap sigwinch WINCH
 stty -echo
 echo -ne "\e[?25l"
 
+echo -ne "\e[2J"
 rains=()
 sigwinch
 while :; do
@@ -99,15 +108,14 @@ while :; do
       ;;
   esac
 
-  if ((num_rains <= MAX_RAINS)) && ((100 * RANDOM / 32768 < NEW_RAIN_ODD)); then
+  if ((num_rains < MAX_RAINS)) && ((100 * RANDOM / 32768 < NEW_RAIN_ODD)); then
     # Need new |, 1-based
     RAIN="${RAINS[NRAINS * RANDOM / 32768]}"
     COLOR="${COLORS[NCOLORS * RANDOM / 32768]}"
-    LENGTH=$(((MAX_RAIN_LENGTH + 1) * RANDOM / 32768))
+    LENGTH=$((MAX_RAIN_LENGTH * RANDOM / 32768 + 1))
     X=$((TERM_WIDTH * RANDOM / 32768 + 1))
-    Y=$((1 - LENGTH + 1))
+    Y=$((1 - LENGTH))
     rains=("${rains[@]}" "$X" "$Y" "$RAIN" "$COLOR" "$LENGTH")
-    echo -ne "\e[${Y};${X}H${COLOR}${RAIN}"
     ((num_rains++))
   fi
 
