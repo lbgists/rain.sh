@@ -1,178 +1,116 @@
 #!/bin/bash
-# Copyright 2011 Yu-Jie Lin
-# New BSD License
+# Let it Rain!
+# Copyright (C) 2011, 2013 by Yu-Jie Lin
 #
-# Falling <3s (Hearts) for terminal
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 #
-# Started at 2011-02-01T17:34:07Z
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+#
+# Modified from falling-<3s.sh:
+#   http://blog.yjl.im/2011/02/time-to-have-falling-hearts-screensaver.html
 
-# Default Settings
-##################
-
-# Comment out if your terminal doesn't support 256 colors
-COLOR256=1
-# "❤" <- This is U+2764, now shown with my font
-HEARTS=("♥" "♡" "<3" "Ɛ>" "LOVE" "ǝʌoן")
-# Only 31-red 35-magenta look like <3
-HEART_COLORS=("\e[31m" "\e[31;1m" "\e[35m" "\e[35;1m")
+RAINS=("|" "│" "┃" "┆" "┇" "┊" "┋" "╽" "╿")
+COLORS=("\e[37m" "\e[37;1m")
 # More from 256 color mode
-if [[ $COLOR256 ]]; then
-	for i in {4..5}; do
-		for j in {0..5}; do
-			HEART_COLORS=("${HEART_COLORS[@]}" "\e[38;5;$((i * 36 + 16 + j))m")
-		done
-	done
-fi
+for i in {244..255}; do
+  COLORS=("${COLORS[@]}" "\e[38;5;${i}m")
+done
+NRAINS=${#RAINS[@]}
+NCOLORS=${#COLORS[@]}
+NUM_RAIN_METADATA=5
 
-STEP_DURATION=0.1
-# In percentage
-NEW_HEART_ODD=50
-MAX_HEARTS=100
-FALLING_ODD=50
-NUM_HEART_METADATA=4
-
-# http://www.ascii-fr.com/-Hearts-.html
-BIG_HEART_WIDTH=56
-BIG_HEART_HEIGHT=19
-BIG_HEART="        LoveLoveLov                eLoveLoveLo
-     veLoveLoveLoveLove          LoveLoveLoveLoveLo
-  veLoveLoveLoveLoveLoveL      oveLoveLoveLoveLoveLove
- LoveLoveLoveLoveLoveLoveL    oveLoveLoveLoveLoveLoveLo
-veLoveLoveLoveLoveLoveLoveL  oveLoveLoveLoveLoveLoveLove
-LoveLoveLoveLoveLoveLoveLoveLoveLoveLoveLoveLoveLoveLove
-LoveLoveLoveLoveLoveLoveLoveLoveLoveLoveLoveLoveLoveLove
- LoveLoveLoveLoveLoveLoveLoveLoveLoveLoveLoveLoveLoveLo
- veLoveLoveLoveLoveLoveLoveLoveLoveLoveLoveLoveLoveLove
-   LoveLoveLoveLoveLoveLoveLoveLoveLoveLoveLoveLoveLo
-     veLoveLoveLoveLoveLoveLoveLoveLoveLoveLoveLove
-       LoveLoveLoveLoveLoveLoveLoveLoveLoveLoveLo
-         veLoveLoveLoveLoveLoveLoveLoveLoveLove
-           LoveLoveLoveLoveLoveLoveLoveLoveLo
-             veLoveLoveLoveLoveLoveLoveLove
-               LoveLoveLoveLoveLoveLoveLo
-                  veLoveLoveLoveLoveLo
-                      veLoveLoveLo
-                           ve
-"
 
 sigwinch() {
-	TERM_WIDTH=$(tput cols)
-	TERM_HEIGHT=$(tput lines)
-	BIG_HEART_X=$(((TERM_WIDTH-BIG_HEART_WIDTH)/2))
-	}
-
-sigint() {
-	local x, y
-	end_text=" Ɛ> Happy Valentine's Day!!! <3 "
-	x=$(((TERM_WIDTH - ${#end_text}) / 2))
-	for ((y=1; y<=TERM_HEIGHT/2; y++)); do
-		do_render 1
-
-		if [[ $COLOR256 ]]; then
-			color="$((6 - 6 * y / (TERM_HEIGHT / 2)))"
-			if ((color == 0)); then
-				color="\e[31;1m"
-			else
-				color="\e[38;5;$((5 * 36 + 16 + color - 1))m"
-			fi
-		else
-			color="\e[31;1m"
-		fi
-
-		echo -ne "\e[${y};${x}H${color}${end_text}\e[0m"
-		sleep 0.025
-	done
-	do_exit
-	}
+  TERM_WIDTH=$(tput cols)
+  TERM_HEIGHT=$(tput lines)
+  STEP_DURATION=0.025
+  ((MAX_RAINS = TERM_WIDTH * TERM_HEIGHT / 4))
+  ((MAX_RAIN_LENGTH = TERM_HEIGHT < 10 ? 1 : TERM_HEIGHT / 10))
+  # In percentage
+  ((NEW_RAIN_ODD = TERM_HEIGHT > 50 ? 100 : TERM_HEIGHT * 2))
+  ((NEW_RAIN_ODD = NEW_RAIN_ODD * 75 / 100))
+  ((FALLING_ODD = TERM_HEIGHT > 25 ? 100 : TERM_HEIGHT * 4))
+  ((FALLING_ODD = FALLING_ODD * 90 / 100))
+  }
 
 do_exit() {
-	echo -ne "\e[${TERM_HEIGHT};1H\e[0K"
-	
-	# Show cursor and echo stdin
-	echo -ne "\e[?25h"
-	stty echo
-	exit 0
-	}
+  echo -ne "\e[${TERM_HEIGHT};1H\e[0K"
+
+  # Show cursor and echo stdin
+  echo -ne "\e[?25h"
+  stty echo
+  exit 0
+  }
 
 do_render() {
-	local x, y
-	# Clean screen first
-	echo -ne "\e[2J"
+  # Clean screen first
+  echo -ne "\e[2J"
 
-	# The BIG HEART!
-	if [[ $big_heart ]]; then
-		y=$(((TERM_HEIGHT-BIG_HEART_HEIGHT)/2))
-		color="${HEART_COLORS[${#HEART_COLORS[@]} * RANDOM / 32768]}"
-		OLDIFS="$IFS"
-		IFS=$'\n'
-		echo -n "$BIG_HEART" | while read line_heart; do
-			echo -ne "\e[${y};${BIG_HEART_X}H${color}${line_heart}"
-			((y++))
-		done
-		IFS="$OLDIFS"
-	fi
+  for ((idx = 0; idx < num_rains * NUM_RAIN_METADATA; idx += NUM_RAIN_METADATA)); do
+    if ((100 * RANDOM / 32768 < FALLING_ODD)); then
+      # Falling
+      if ((++rains[idx + 1] > TERM_HEIGHT)); then
+        # Out of screen, bye sweet <3
+        rains=("${rains[@]:0:idx}"
+               "${rains[@]:idx+NUM_RAIN_METADATA:num_rains*NUM_RAIN_METADATA}")
+        ((num_rains--))
+        continue
+      fi
+    fi
+    X=${rains[idx]}
+    Y=${rains[idx + 1]}
+    RAIN=${rains[idx + 2]}
+    COLOR=${rains[idx + 3]}
+    LENGTH=${rains[idx + 4]}
+    for ((y = Y; y < Y + LENGTH; y++)); do
+      (( y < 1 || y > TERM_HEIGHT )) && continue
+      echo -ne "\e[${y};${X}H${COLOR}${RAIN}"
+    done
+  done
+  }
 
-	idx=1
-	while ((idx<=num_hearts)); do
-		if [[ -z "$1" ]] && ((100 * RANDOM / 32768 < FALLING_ODD)); then
-			# Falling
-			if ((++hearts[(idx - 1) * NUM_HEART_METADATA + 1] > TERM_HEIGHT)); then
-				# Out of screen, bye sweet <3
-				hearts=(
-					"${hearts[@]:0:(idx-1)*NUM_HEART_METADATA}"
-					"${hearts[@]:idx*NUM_HEART_METADATA:(num_hearts-idx)*NUM_HEART_METADATA}"
-					)
-				((num_hearts--))
-				continue
-			fi
-		fi
-		X=${hearts[(idx - 1) * NUM_HEART_METADATA]}
-		Y=${hearts[(idx - 1) * NUM_HEART_METADATA + 1]}
-		HEART=${hearts[(idx - 1) * NUM_HEART_METADATA + 2]}
-		HEART_COLOR=${hearts[(idx - 1) * NUM_HEART_METADATA + 3]}
-		echo -ne "\e[${Y};${X}H${HEART_COLOR}${HEART}"
-		((idx++))
-	done
-	}
-
-trap do_exit TERM
-trap sigint INT
+trap do_exit TERM INT
 trap sigwinch WINCH
 # No echo stdin and hide the cursor
 stty -echo
 echo -ne "\e[?25l"
 
-hearts=()
-echo -ne "\e[2J"
+rains=()
 sigwinch
 while :; do
-	read -n 1 -t $STEP_DURATION ch
-	case "$ch" in
-		q|Q)
-			sigint
-			;;
-		l|L) # Show/hide a big heart!
-			if [[ $big_heart ]]; then
-				big_heart=
-			else
-				big_heart=1
-			fi
-			;;
-	esac
-	
-	num_hearts=$((${#hearts[@]} / NUM_HEART_METADATA))
-	if ((num_hearts <= MAX_HEARTS)) && ((100 * RANDOM / 32768 < NEW_HEART_ODD)); then
-		# Need new <3
-		# 1-based
-		HEART="${HEARTS[${#HEARTS[@]} * RANDOM / 32768]}"
-		X=$((TERM_WIDTH * RANDOM / 32768 + 1 - ${#HEART}))
-		Y=1
-		HEART_COLOR="${HEART_COLORS[${#HEART_COLORS[@]} * RANDOM / 32768]}"
-		hearts=("${hearts[@]}" "$X" "$Y" "$HEART" "$HEART_COLOR")
-		echo -ne "\e[${Y};${X}H${HEART_COLOR}${HEART}"
-		((num_hearts++))
-	fi
+  read -n 1 -t $STEP_DURATION ch
+  case "$ch" in
+    q|Q)
+      do_exit
+      ;;
+  esac
 
-	# Let <3s fall!
-	do_render
+  if ((num_rains <= MAX_RAINS)) && ((100 * RANDOM / 32768 < NEW_RAIN_ODD)); then
+    # Need new |, 1-based
+    RAIN="${RAINS[NRAINS * RANDOM / 32768]}"
+    COLOR="${COLORS[NCOLORS * RANDOM / 32768]}"
+    LENGTH=$(((MAX_RAIN_LENGTH + 1) * RANDOM / 32768))
+    X=$((TERM_WIDTH * RANDOM / 32768 + 1))
+    Y=$((1 - LENGTH + 1))
+    rains=("${rains[@]}" "$X" "$Y" "$RAIN" "$COLOR" "$LENGTH")
+    echo -ne "\e[${Y};${X}H${COLOR}${RAIN}"
+    ((num_rains++))
+  fi
+
+  # Let rain fall!
+  do_render
 done
