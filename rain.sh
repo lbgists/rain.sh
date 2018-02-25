@@ -20,13 +20,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 #
-# Blog: http://blog.yjl.im/2013/07/let-it-rain.html
-# Gist: https://gist.github.com/livibetter/5933594
+# Blog: https://yjlv.blogstpo.com/2013/07/let-it-rain.html
 # Gif : https://lh5.googleusercontent.com/-0WJ1vSZcFPs/UdadOwdPEXI/AAAAAAAAE-c/6kuH9hP3cUo/s800/rain.sh.gif
-# Clip: http://youtu.be/EssRgAh2w_c
+# Clip: https://youtu.be/EssRgAh2w_c
 #
 # Modified from falling-<3s.sh:
-#   http://blog.yjl.im/2011/02/time-to-have-falling-hearts-screensaver.html
+#   https://yjlv.blogstpo.com/2011/02/time-to-have-falling-hearts-screensaver.html
 
 RAINS=("|" "│" "┃" "┆" "┇" "┊" "┋" "╽" "╿")
 COLORS=("\e[37m" "\e[37;1m")
